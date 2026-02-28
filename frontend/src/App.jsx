@@ -9,7 +9,7 @@ function App() {
 
   useEffect(()=>{
     //fetch("http://localhost:5000/") //works for Local Dev 
-    fetch("3.110.42.127:5000/") //Replaced localhost with EC2 instance Public ipv4 address cause that VM is a PC now and its name is identified as 3.110.42.127  not as localhost
+    fetch("/") //Replaced localhost with EC2 instance Public ipv4 address cause that VM is a PC now and its name is identified as 3.110.42.127 not as localhost. We dont need to say "http://3.110.42.127:5000/" cause every fetch request runs on 3.110.42.127 automatically so we just need to mention "/" thats all
     .then(res => res.text())
     .then(data => setBackendMsg(data));
   }, []);
