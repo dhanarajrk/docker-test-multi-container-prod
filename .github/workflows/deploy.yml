@@ -7,7 +7,7 @@ on:
 
   workflow_dispatch:
 
-    
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -59,3 +59,6 @@ jobs:
     
             # Start new containers (this is not building cause we already built and uploaded image to Dockerhub. This is just downloading image and running as Docker Container inside EC2 VM)
             docker-compose up -d
+
+            # Removes old unused images from EC2 after running the new images TO SAVE SPACE
+            docker image prune -a -f
