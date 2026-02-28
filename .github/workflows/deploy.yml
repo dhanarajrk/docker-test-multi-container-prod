@@ -1,0 +1,58 @@
+name: Build Docker Image, Push Image to Dockerhub & Docker Pull Compose on EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub   #use github docker login plugin (which is easier)
+        uses: docker/login-action@v3 
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build Backend Image  #i dont use github plugin for building and pushing image cause docker normal command feels easier to me
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend ./backend
+    
+      - name: Push Backend Image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-backend
+    
+      - name: Build Frontend Image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend ./frontend
+    
+      - name: Push Frontend Image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mern-frontend
+
+      - name: SSH to EC2 & Deploy #use appleboy plugin to ssh into AWS EC2 instance and then pull the image and run compose
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # ~ means home directory of ec2, then we cd /mern-deploy OR create one if not exist before 
+            cd ~/mern-deploy || mkdir ~/mern-deploy && cd ~/mern-deploy
+
+            # Login to DockerHub on EC2 (needed for private images). We use stdin to hide password in Github action. Docker will use the stdout password before the echo pipe | symbol
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            
+            # Pull latest docker-compose.yml from github repo
+            echo "Pulling latest docker-compose..."
+            curl -O https://raw.githubusercontent.com/dhanarajrk/docker-test-multi-container-prod/main/docker-compose.yml
+
+            # Pull latest images from DockerHub
+            docker-compose pull
+    
+            # Destroy old containers
+            docker-compose down
+    
+            # Start new containers (this is not building cause we already built and uploaded image to Dockerhub. This is just downloading image and running as Docker Container inside EC2 VM)
+            docker-compose up -d
