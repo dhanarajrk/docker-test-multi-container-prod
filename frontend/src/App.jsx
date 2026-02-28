@@ -26,7 +26,7 @@ function App() {
       </div>
 
       <h1>Docker + React</h1>
-      <p>Docker Multi-Container Test</p>
+      <p>Docker Multi-Container Test (Production Optimized)</p>
 
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
